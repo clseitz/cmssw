@@ -79,7 +79,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile, PUMethod='CHS', miniAOD=
 	#### For MiniAOD
 	if miniAOD:
 
-		print '|-------------- JETTOOLBOX RUNNING ON MiniAOD  ------------------'
+		print '|-------------- JETTOOLBOX RUNNING ON MiniAOD FOR '+jetALGO+' JETS USING '+PUMethod+' ------------------'
 
 		genParticlesLabel = 'prunedGenParticles'
 		pvLabel = 'offlineSlimmedPrimaryVertices'
@@ -111,7 +111,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile, PUMethod='CHS', miniAOD=
 
 	#### For AOD
 	else:
-		print '|-------------- JETTOOLBOX RUNNING ON AOD  ------------------'
+		print '|-------------- JETTOOLBOX RUNNING ON AOD FOR '+jetALGO+' JETS USING '+PUMethod+' ------------------'
 
 		genParticlesLabel = 'genParticles'
 		pvLabel = 'offlinePrimaryVertices'
@@ -369,41 +369,128 @@ def jetToolbox( proc, jetType, jetSequence, outputFile, PUMethod='CHS', miniAOD=
 		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'FilteredLinks' )
 		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ jetalgo+'PFJets'+PUMethod+'FilteredLinks']
 
-	if addCMSTopTagger:
+	if addCMSTopTagger :
 
-		if miniAOD: setattr( proc, 'cmsTopTagPFJets'+PUMethod,  cmsTopTagPFJetsCHS.clone( src = 'chs' ) ) #, rParam = jetSize ) )
-		setattr( proc, 'cmsTopTagPFJets'+PUMethod+'Links'+jetALGO, 
-				ak8PFJetsCHSPrunedLinks.clone( src = cms.InputTag( jetalgo+'PFJets'+PUMethod), 
-					matched = cms.InputTag('cmsTopTagPFJets'+PUMethod), 
-					distMax = cms.double( jetSize ) ) )
+		if 'CA' in jetALGO : 
+			setattr( proc, 'cmsTopTagPFJets'+PUMethod,  
+					cms.EDProducer("CATopJetProducer",
+						PFJetParameters.clone( #src = cms.InputTag("chs"), #ak8PFJetsCHSConstituents", "constituents"),
+							doAreaFastjet = cms.bool(True),
+							doRhoFastjet = cms.bool(False),
+							jetPtMin = cms.double(100.0)
+							),
+						AnomalousCellParameters,
+						CATopJetParameters.clone( jetCollInstanceName = cms.string("SubJets"),
+							verbose = cms.bool(False),
+							algorithm = cms.int32(1), # 0 = KT, 1 = CA, 2 = anti-KT
+							tagAlgo = cms.int32(0), #0=legacy top
+							useAdjacency = cms.int32(2), # modified adjacency
+							centralEtaCut = cms.double(2.5), # eta for defining "central" jets
+							sumEtBins = cms.vdouble(0,1600,2600), # sumEt bins over which cuts vary. vector={bin 0 lower bound, bin 1 lower bound, ...}
+							rBins = cms.vdouble(0.8,0.8,0.8), # Jet distance paramter R. R values depend on sumEt bins.
+							ptFracBins = cms.vdouble(0.05,0.05,0.05), # minimum fraction of central jet pt for subjets (deltap)
+							deltarBins = cms.vdouble(0.19,0.19,0.19), # Applicable only if useAdjacency=1. deltar adjacency values for each sumEtBin
+							nCellBins = cms.vdouble(1.9,1.9,1.9),
+							),
+						jetAlgorithm = cms.string("CambridgeAachen"),
+						rParam = cms.double(jetSize),
+						writeCompound = cms.bool(True)
+						)
+					)
+			if miniAOD: getattr( proc, 'cmsTopTagPFJets'+PUMethod ).src = 'chs'
+			
+			setattr( proc, "CATopTagInfos", 
+					cms.EDProducer("CATopJetTagger",
+						src = cms.InputTag('cmsTopTagPFJets'+PUMethod),
+						TopMass = cms.double(171),
+						TopMassMin = cms.double(0.),
+						TopMassMax = cms.double(250.),
+						WMass = cms.double(80.4),
+						WMassMin = cms.double(0.0),
+						WMassMax = cms.double(200.0),
+						MinMassMin = cms.double(0.0),
+						MinMassMax = cms.double(200.0),
+						verbose = cms.bool(False)
+						)
+					)
+			addJetCollection(
+					proc,
+					labelName = 'CMSTopTag'+PUMethod,
+					jetSource = cms.InputTag('cmsTopTagPFJets'+PUMethod),
+					jetCorrections = ( 'AK'+size+'PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+					pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
+					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
+					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
+					btagDiscriminators = bTagDiscriminators,
+					genJetCollection = cms.InputTag(jetalgo+'GenJetsNoNu'),
+					getJetMCFlavour = False
+					)
+			getattr(proc,'patJetPartonMatchCMSTopTag'+PUMethod).matched = cms.InputTag( genParticlesLabel ) #'prunedGenParticles')
+			if hasattr(proc,'pfInclusiveSecondaryVertexFinderTagInfosCMSTopTag'+PUMethod):
+				getattr(proc,'pfInclusiveSecondaryVertexFinderTagInfosCMSTopTag'+PUMethod).extSVCollection = cms.InputTag( svLabel ) #'slimmedSecondaryVertices')
+			proc.patJetsCMSTopTagCHS.addTagInfos = True
+			proc.patJetsCMSTopTagCHS.tagInfoSources = cms.VInputTag( cms.InputTag('CATopTagInfos'))
+			getattr(proc,'patJetCorrFactorsCMSTopTag'+PUMethod ).primaryVertices = pvLabel  #'offlineSlimmedPrimaryVertices' 
+			getattr(proc,'patJetsCMSTopTag'+PUMethod).addAssociatedTracks = cms.bool(False) # needs to be disabled since there is no track collection present in MiniAOD
+			getattr(proc,'patJetsCMSTopTag'+PUMethod).addJetCharge = cms.bool(False)        # needs to be disabled since there is no track collection present in MiniAOD
 
-		elemToKeep += [ 'keep *_cmsTopTagPFJets'+PUMethod+'Links'+jetALGO+'_*_*' ]
-		jetSeq += getattr(proc, 'cmsTopTagPFJets'+PUMethod )
-		jetSeq += getattr(proc, 'cmsTopTagPFJets'+PUMethod+'Links'+jetALGO )
-		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ 'cmsTopTagPFJets'+PUMethod+'Links'+jetALGO ]
+			addJetCollection(
+					proc,
+					labelName = 'CMSTopTagCHSSubjets',
+					jetSource = cms.InputTag('cmsTopTagPFJets'+PUMethod, 'SubJets'),
+					pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
+					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
+					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
+					btagDiscriminators = ['pfCombinedSecondaryVertexBJetTags'],
+					jetCorrections = ('AK4PFchs', ['L1FastJet', 'L2Relative', 'L3Absolute'], 'None'),
+					explicitJTA = True,  # needed for subjet b tagging
+					svClustering = True, # needed for subjet b tagging
+					getJetMCFlavour = False,
+					genJetCollection =  cms.InputTag('ak8GenJetsNoNu')
+					)
 
-	if ( 'CA' in jetALGO ) and addMassDrop :
+			getattr(proc,'patJetPartonMatchCMSTopTag'+PUMethod+'Subjets').matched = cms.InputTag( genParticlesLabel ) #'prunedGenParticles')
+			if hasattr(proc,'pfInclusiveSecondaryVertexFinderTagInfosCMSTopTag'+PUMethod+'Subjets'):
+				getattr(proc,'pfInclusiveSecondaryVertexFinderTagInfosCMSTopTag'+PUMethod+'Subjets').extSVCollection = cms.InputTag(svLabel) #'slimmedSecondaryVertices')
+			getattr(proc,'patJetCorrFactorsCMSTopTag'+PUMethod+'Subjets' ).primaryVertices = pvLabel  #'offlineSlimmedPrimaryVertices' 
+			getattr(proc,'patJetsCMSTopTag'+PUMethod+'Subjets').addAssociatedTracks = cms.bool(False) # needs to be disabled since there is no track collection present in MiniAOD
+			getattr(proc,'patJetsCMSTopTag'+PUMethod+'Subjets').addJetCharge = cms.bool(False)        # needs to be disabled since there is no track collection present in MiniAOD
 
-		setattr( proc, jetalgo+'PFJets'+PUMethod+'MassDropFiltered', ca15PFJetsCHSMassDropFiltered.clone( rParam = jetSize ) )
-		if miniAOD: getattr( proc, jetalgo+'PFJets'+PUMethod+'MassDropFiltered').src = 'chs'
-		setattr( proc, jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks', ak8PFJetsCHSPrunedLinks.clone( src = cms.InputTag( jetalgo+'PFJets'+PUMethod), 
-			matched = cms.InputTag(jetalgo+'PFJets'+PUMethod+'MassDropFiltered'), distMax = cms.double( jetSize ) ) )
-		elemToKeep += [ 'keep *_'+jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks_*_*' ]
-		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks' ]
-		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'MassDropFiltered' )
-		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks' )
-	else: 'CA is recommended for Mass Drop.'
+			setattr( proc, 'patJetsCMSTopTag'+PUMethod+'Packed', 
+					cms.EDProducer("BoostedJetMerger",
+						jetSrc=cms.InputTag('patJetsCMSTopTag'+PUMethod ),
+						subjetSrc=cms.InputTag('patJetsCMSTopTag'+PUMethod+'Subjets')
+						))
+			jetSeq += getattr(proc, 'patJetsCMSTopTag'+PUMethod+'Packed' )
+			elemToKeep += [ 'keep *_patJetsCMSTopTag'+PUMethod+'Packed_*_*' ]
 
-	if ( 'CA' in jetALGO ) and ( jetSize > 1 ) and addHEPTopTagger: 
+		else: print '|----- CMS recommends CambridgeAachen for CMS Top Tagger, you are using '+algorithm+'. JetToolbox will not run CMS Top Tagger.'
 
-		if miniAOD: setattr( proc, 'hepTopTagPFJets'+PUMethod, hepTopTagPFJetsCHS.clone( src = 'chs' ) )
-		setattr( proc, 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO, ak8PFJetsCHSPrunedLinks.clone( src = cms.InputTag( jetalgo+'PFJets'+PUMethod), 
-			matched = cms.InputTag("hepTopTagPFJets'+PUMethod+'"), distMax = cms.double( jetSize ) ) )
-		elemToKeep += [ 'keep *_hepTopTagPFJets'+PUMethod+'Links'+jetALGO+'_*_*' ]
-		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO ]
-		jetSeq += getattr(proc, 'hepTopTagPFJets'+PUMethod )
-		jetSeq += getattr(proc, 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO )
-	else: 'CA and a jet Size bigger than 1 are recommended for HEPTopTagger.'
+	if addMassDrop :
+
+		if 'CA' in jetALGO : 
+			setattr( proc, jetalgo+'PFJets'+PUMethod+'MassDropFiltered', ca15PFJetsCHSMassDropFiltered.clone( rParam = jetSize ) )
+			if miniAOD: getattr( proc, jetalgo+'PFJets'+PUMethod+'MassDropFiltered').src = 'chs'
+			setattr( proc, jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks', ak8PFJetsCHSPrunedLinks.clone( src = cms.InputTag( jetalgo+'PFJets'+PUMethod), 
+				matched = cms.InputTag(jetalgo+'PFJets'+PUMethod+'MassDropFiltered'), distMax = cms.double( jetSize ) ) )
+			elemToKeep += [ 'keep *_'+jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks_*_*' ]
+			getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks' ]
+			jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'MassDropFiltered' )
+			jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks' )
+		else: print '|----- CMS recommends CambridgeAachen for Mass Drop, you are using '+algorithm+'. JetToolbox will not run Mass Drop.'
+
+	if addHEPTopTagger: 
+		if ( jetSize > 1 ) and ( 'CA' in jetALGO ): 
+
+			infoText='for HEP TopTagger. Also a jetCone bigger than 1.'
+			if miniAOD: setattr( proc, 'hepTopTagPFJets'+PUMethod, hepTopTagPFJetsCHS.clone( src = 'chs' ) )
+			setattr( proc, 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO, ak8PFJetsCHSPrunedLinks.clone( src = cms.InputTag( jetalgo+'PFJets'+PUMethod), 
+				matched = cms.InputTag("hepTopTagPFJets'+PUMethod+'"), distMax = cms.double( jetSize ) ) )
+			elemToKeep += [ 'keep *_hepTopTagPFJets'+PUMethod+'Links'+jetALGO+'_*_*' ]
+			getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO ]
+			jetSeq += getattr(proc, 'hepTopTagPFJets'+PUMethod )
+			jetSeq += getattr(proc, 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO )
+		else: print '|----- CMS recommends CambridgeAachen for HEPTopTagger, you are using '+algorithm+', and a jet cone size bigger than 1. JetToolbox will not run HEP TopTagger.'
 
 	####### Nsubjettiness
 	if addNsub:
