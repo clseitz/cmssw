@@ -23,8 +23,10 @@ from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
 
 def jetToolbox( proc, jetType, jetSequence, outputFile, 
 		PUMethod='CHS',                    #### Options: Puppi, CS, SK
+		JETCorrPayload='', JETCorrLevels = [],
+		subJETCorrPayload='', subJETCorrLevels = [],
 		miniAOD=True,
-		Cut = '',                     # minPt=100., 
+		Cut = '', 
 		addPruning=False, zCut=0.1, rCut=0.5, addPrunedSubjets=False,
 		addSoftDrop=False, betaCut=0.0,  zCutSD=0.1, addSoftDropSubjets=False,
 		addTrimming=False, rFiltTrim=0.2, ptFrac=0.03,
@@ -58,14 +60,26 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 	jetALGO = jetAlgo.upper()+size
 	jetalgo = jetAlgo.lower()+size
 
-	### For JEC for jets larger than 1 
-	if( int(size) > 10 ): 
-		size = '10' 
-		print '|---- For jets bigger than 1.0, the jet corrections are AK10PFchs.'
-
 	recommended=False
 	if jetalgo not in recommendedJetAlgos : print '|---- jetToolBox: CMS recommends the following jet algoritms:', recommendedJetAlgos, '. You are using', jetalgo,'.'
 	else: recommended=True
+
+	#JEC = ( 'AK'+size+'PFchs', cms.vstring( ['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+	if '' in JETCorrPayload: 
+		if( int(size) > 10 ): 
+			size = '10' 
+			print '|---- For jets bigger than 1.0, the jet corrections are AK10PFchs.'
+		JETCorrPayload = 'AK'+size+'PFchs'
+	if len( JETCorrLevels ) == 0: JETCorrLevels = ['L1FastJet', 'L2Relative', 'L3Absolute']
+	
+	print '|---- jetToolBox: Applying these jet corrections: ( '+JETCorrPayload+', '+' '.join(JETCorrLevels)+' )'
+	JEC = ( JETCorrPayload, JETCorrLevels , 'None')
+
+	if addPrunedSubjets or addSoftDropSubjets or addCMSTopTagger:
+		if '' in subJETCorrPayload: subJETCorrPayload = 'AK4PFchs'
+		if len( subJETCorrLevels ) == 0: subJETCorrLevels = ['L1FastJet', 'L2Relative', 'L3Absolute']
+		print '|---- jetToolBox: Applying these subjet corrections: ( '+subJETCorrPayload+', '+' '.join(subJETCorrLevels)+' )'
+		subJEC = ( subJETCorrPayload, subJETCorrLevels , 'None')
 
 
 	#################################################################################
@@ -201,7 +215,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 			jetSource = cms.InputTag( jetalgo+'PFJets'+PUMethod),
 			algo = jetalgo,
 			rParam = jetSize,
-			jetCorrections = ( 'AK'+size+'PFchs', cms.vstring( ['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+			jetCorrections = JEC, #( 'AK'+size+'PFchs', cms.vstring( ['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
 			pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
 			svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
 			genJetCollection = cms.InputTag( jetalgo+'GenJetsNoNu'),
@@ -246,6 +260,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ jetalgo+'PFJets'+PUMethod+'SoftDropLinks']
 
 		if addSoftDropSubjets:
+
 			setattr( proc, jetalgo+'GenJetsNoNuSoftDrop',
 					ak4GenJets.clone(
 						SubJetParameters,
@@ -267,7 +282,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					jetSource = cms.InputTag( jetalgo+'PFJets'+PUMethod+'SoftDrop'),
 					algo = jetalgo,
 					rParam = jetSize,
-					jetCorrections = ( 'AK'+size+'PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+					jetCorrections = JEC,
 					btagDiscriminators = ['None'],
 					genJetCollection = cms.InputTag( jetalgo+'GenJetsNoNu'),
 					getJetMCFlavour = False,
@@ -281,7 +296,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					proc,
 					labelName = jetALGO+'PF'+PUMethod+'SoftDropSubjets',
 					jetSource = cms.InputTag( jetalgo+'PFJets'+PUMethod+'SoftDrop', 'SubJets'),
-					jetCorrections = ( 'AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+					jetCorrections = subJEC, #( 'AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
 					pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
 					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
@@ -349,7 +364,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					jetSource = cms.InputTag( jetalgo+'PFJets'+PUMethod+'Pruned'),
 					algo = jetalgo,
 					rParam = jetSize,
-					jetCorrections = ( 'AK'+size+'PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+					jetCorrections = JEC,
 					btagDiscriminators = ['None'],
 					genJetCollection = cms.InputTag( jetalgo+'GenJetsNoNu'),
 					getJetMCFlavour = False,
@@ -363,7 +378,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					proc,
 					labelName = jetALGO+'PF'+PUMethod+'PrunedSubjets',
 					jetSource = cms.InputTag( jetalgo+'PFJets'+PUMethod+'Pruned', 'SubJets'),
-					jetCorrections = ( 'AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+					jetCorrections = subJEC,
 					pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
 					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
@@ -478,7 +493,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					proc,
 					labelName = 'CMSTopTag'+PUMethod,
 					jetSource = cms.InputTag('cmsTopTagPFJets'+PUMethod),
-					jetCorrections = ( 'AK'+size+'PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+					jetCorrections = JEC,
 					pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
 					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
@@ -504,7 +519,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
 					btagDiscriminators = ['pfCombinedSecondaryVertexBJetTags'],
-					jetCorrections = ('AK4PFchs', ['L1FastJet', 'L2Relative', 'L3Absolute'], 'None'),
+					jetCorrections = subJEC,
 					explicitJTA = True,  # needed for subjet b tagging
 					svClustering = True, # needed for subjet b tagging
 					getJetMCFlavour = False,
