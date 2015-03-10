@@ -39,10 +39,13 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		):
 	
 	###############################################################################
-	#######  Just defining simple variables
+	#######  Verifying some inputs and defining variables
 	###############################################################################
+	print '|---- jetToolbox: Initialyzing...'
 	supportedJetAlgos = { 'ak': 'AntiKt', 'ca' : 'CambridgeAachen', 'kt' : 'Kt' }
-	recommendedJetAlgos = [ 'ak4', 'ak8', 'ca4', 'ca8' ]
+	recommendedJetAlgos = [ 'ak4', 'ak8', 'ca4', 'ca8', 'ca10' ]
+	payloadList = [ 'AK1PFchs', 'AK2PFchs', 'AK3PFchs', 'AK4PFchs', 'AK5PFchs', 'AK6PFchs', 'AK7PFchs', 'AK8PFchs', 'AK9PFchs', 'AK10PFchs' ]
+	JECLevels = [ 'L1Offset', 'L1FastJet', 'L1JPTOffset', 'L2Relative', 'L3Absolute', 'L5Falvour', 'L7Parton' ]
 	jetAlgo = ''
 	algorithm = ''
 	size = ''
@@ -51,7 +54,6 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 			jetAlgo = type
 			algorithm = tmpAlgo
 			size = jetType.replace( type, '' )
-	if jetAlgo == '': print '|---- jetToolBox: Unsupported jet algorithm. Please use something like: jetType = CA8'
 
 	jetSize = 0.
 	if int(size) in range(0, 20): jetSize = int(size)/10.
@@ -59,25 +61,30 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 	### Trick for uppercase/lowercase algo name
 	jetALGO = jetAlgo.upper()+size
 	jetalgo = jetAlgo.lower()+size
+	if jetalgo not in recommendedJetAlgos: print '|---- jetToolBox: CMS recommends the following jet algoritms: '+' '.join(recommendedJetAlgos)+'. You are using', jetalgo,'.'
 
-	recommended=False
-	if jetalgo not in recommendedJetAlgos : print '|---- jetToolBox: CMS recommends the following jet algoritms:', recommendedJetAlgos, '. You are using', jetalgo,'.'
-	else: recommended=True
-
-	#JEC = ( 'AK'+size+'PFchs', cms.vstring( ['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
-	if '' in JETCorrPayload: 
+	if JETCorrPayload not in payloadList:
 		if( int(size) > 10 ): 
 			size = '10' 
 			print '|---- For jets bigger than 1.0, the jet corrections are AK10PFchs.'
+		print '|---- jetToolBox: Payload given for Jet corrections ('+JETCorrPayload+') is not correct. Using a default AK'+size+'PFchs instead.'
 		JETCorrPayload = 'AK'+size+'PFchs'
-	if len( JETCorrLevels ) == 0: JETCorrLevels = ['L1FastJet', 'L2Relative', 'L3Absolute']
+	else: print '|---- jetToolBox: Using '+JETCorrPayload+' payload for jet corrections.'
+
+	if not set(JETCorrLevels).issubset(set(JECLevels)):
+		print '|---- jetToolbox: JEC levels given ( '+' '.join(JETCorrLevels)+' ) are incorrect. Using the default levels: L1FastJet, L2Relative, L3Absolute.'
+		JETCorrLevels = ['L1FastJet', 'L2Relative', 'L3Absolute']
 	
 	print '|---- jetToolBox: Applying these jet corrections: ( '+JETCorrPayload+', '+' '.join(JETCorrLevels)+' )'
 	JEC = ( JETCorrPayload, JETCorrLevels , 'None')
 
 	if addPrunedSubjets or addSoftDropSubjets or addCMSTopTagger:
-		if '' in subJETCorrPayload: subJETCorrPayload = 'AK4PFchs'
-		if len( subJETCorrLevels ) == 0: subJETCorrLevels = ['L1FastJet', 'L2Relative', 'L3Absolute']
+		if subJETCorrPayload not in payloadList: 
+			print '|---- jetToolBox: Payload given for subjet corrections ('+JETCorrPayload+') is not correct. Using default AK4PFchs instead.'
+			subJETCorrPayload = 'AK4PFchs'
+		if not set(subJETCorrLevels).issubset(set(JECLevels)):
+			print '|---- jetToolbox: Subjet JEC levels given ( '+' '.join(subJETCorrLevels)+' ) are incorrect. Using the default levels: L1FastJet, L2Relative, L3Absolute.'
+			subJETCorrLevels = ['L1FastJet', 'L2Relative', 'L3Absolute']
 		print '|---- jetToolBox: Applying these subjet corrections: ( '+subJETCorrPayload+', '+' '.join(subJETCorrLevels)+' )'
 		subJEC = ( subJETCorrPayload, subJETCorrLevels , 'None')
 
@@ -91,11 +98,12 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 	genParticlesLabel = ''
 	pvLabel = ''
 	tvLabel = ''
+	toolsUsed = []
 
 	#### For MiniAOD
 	if miniAOD:
 
-		print '|-------------- JETTOOLBOX RUNNING ON MiniAOD FOR '+jetALGO+' JETS USING '+PUMethod+' ------------------'
+		print '|---- jetToolBox: JETTOOLBOX RUNNING ON MiniAOD FOR '+jetALGO+' JETS USING '+PUMethod
 
 		genParticlesLabel = 'prunedGenParticles'
 		pvLabel = 'offlineSlimmedPrimaryVertices'
@@ -127,7 +135,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 
 	#### For AOD
 	else:
-		print '|-------------- JETTOOLBOX RUNNING ON AOD FOR '+jetALGO+' JETS USING '+PUMethod+' ------------------'
+		print '|---- jetToolBox: JETTOOLBOX RUNNING ON AOD FOR '+jetALGO+' JETS USING '+PUMethod
 
 		genParticlesLabel = 'genParticles'
 		pvLabel = 'offlinePrimaryVertices'
@@ -258,6 +266,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'SoftDrop' )
 		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'SoftDropLinks' )
 		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ jetalgo+'PFJets'+PUMethod+'SoftDropLinks']
+		toolsUsed.append( jetalgo+'PFJets'+PUMethod+'SoftDropLinks' )
 
 		if addSoftDropSubjets:
 
@@ -323,6 +332,8 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 						))
 			jetSeq += getattr(proc, 'selectedPatJets'+jetALGO+'PF'+PUMethod+'SoftDropPacked' )
 			elemToKeep += [ 'keep *_selectedPatJets'+jetALGO+'PF'+PUMethod+'SoftDropPacked_*_*' ]
+			toolsUsed.append( 'selectedPatJets'+jetALGO+'PF'+PUMethod+'SoftDropPacked' )
+			toolsUsed.append( 'selectedPatJets'+jetALGO+'PF'+PUMethod+'SoftDropSubjets' )
 
 	if addPruning or addPrunedSubjets: 
 
@@ -345,6 +356,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'PrunedLinks' )
 		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ jetalgo+'PFJets'+PUMethod+'PrunedLinks']
 		elemToKeep += [ 'keep *_'+jetalgo+'PFJets'+PUMethod+'PrunedLinks_*_*'] 
+		toolsUsed.append( jetalgo+'PFJets'+PUMethod+'PrunedLinks' )
 
 		if addPrunedSubjets:
 			setattr( proc, jetalgo+'GenJetsNoNuPruned',
@@ -405,6 +417,8 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 						))
 			jetSeq += getattr(proc, 'selectedPatJets'+jetALGO+'PF'+PUMethod+'PrunedPacked' )
 			elemToKeep += [ 'keep *_selectedPatJets'+jetALGO+'PF'+PUMethod+'PrunedPacked_*_*' ]
+			toolsUsed.append( 'selectedPatJets'+jetALGO+'PF'+PUMethod+'PrunedPacked' )
+			toolsUsed.append( 'selectedPatJets'+jetALGO+'PF'+PUMethod+'PrunedSubjets' )
 
 
 	if addTrimming:
@@ -425,6 +439,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'Trimmed' )
 		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'TrimmedLinks' )
 		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ jetalgo+'PFJets'+PUMethod+'TrimmedLinks']
+		toolsUsed.append( jetalgo+'PFJets'+PUMethod+'TrimmedLinks' )
 
 	if addFiltering:
 
@@ -443,6 +458,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'Filtered' )
 		jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'FilteredLinks' )
 		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ jetalgo+'PFJets'+PUMethod+'FilteredLinks']
+		toolsUsed.append( jetalgo+'PFJets'+PUMethod+'FilteredLinks' )
 
 	if addCMSTopTagger :
 
@@ -541,6 +557,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 						))
 			jetSeq += getattr(proc, 'patJetsCMSTopTag'+PUMethod+'Packed' )
 			elemToKeep += [ 'keep *_patJetsCMSTopTag'+PUMethod+'Packed_*_*' ]
+			toolsUsed.append( 'patJetsCMSTopTag'+PUMethod+'Packed' )
 
 		else: print '|----- CMS recommends CambridgeAachen for CMS Top Tagger, you are using '+algorithm+'. JetToolbox will not run CMS Top Tagger.'
 
@@ -556,6 +573,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 			jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'MassDropFiltered' )
 			jetSeq += getattr(proc, jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks' )
 		else: print '|----- CMS recommends CambridgeAachen for Mass Drop, you are using '+algorithm+'. JetToolbox will not run Mass Drop.'
+		toolsUsed.append( jetalgo+'PFJets'+PUMethod+'MassDropFilteredLinks' )
 
 	if addHEPTopTagger: 
 		if ( jetSize >= 1. ) and ( 'CA' in jetALGO ): 
@@ -570,6 +588,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 			getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += [ 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO ]
 			jetSeq += getattr(proc, 'hepTopTagPFJets'+PUMethod )
 			jetSeq += getattr(proc, 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO )
+			toolsUsed.append( 'hepTopTagPFJets'+PUMethod+'Links'+jetALGO )
 		else: print '|----- CMS recommends CambridgeAachen for HEPTopTagger, you are using '+algorithm+', and a jet cone size bigger than 1. JetToolbox will not run HEP TopTagger.'
 
 	####### Nsubjettiness
@@ -593,6 +612,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		elemToKeep += [ 'keep *_Njettiness'+jetALGO+PUMethod+'_*_*' ]
 		for tau in rangeTau: getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += ['Njettiness'+jetALGO+PUMethod+':tau'+str(tau) ] 
 		jetSeq += getattr(proc, 'Njettiness'+jetALGO+PUMethod )
+		toolsUsed.append( 'Njettiness'+jetALGO+PUMethod )
 
 	###### QJetsAdder
 	if addQJets:
@@ -611,6 +631,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		elemToKeep += [ 'keep *_QJetsAdder'+jetALGO+'_*_*' ]
 		getattr( proc, 'patJets'+jetALGO+'PF'+PUMethod).userData.userFloats.src += ['QJetsAdder'+jetALGO+':QjetsVolatility']  
 		jetSeq += getattr(proc, 'QJetsAdder'+jetALGO )
+		toolsUsed.append( 'QJetsAdder'+jetALGO )
 		'''
 		### This is for 731 or higher
 		if 'ak4' in jetalgo:
@@ -629,6 +650,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 	elemToKeep += [ 'drop *_selectedPatJets'+jetALGO+'PF'+PUMethod+'_calo*_*' ]
 	elemToKeep += [ 'drop *_selectedPatJets'+jetALGO+'PF'+PUMethod+'_tagInfos_*' ]
 
+	print '|---- jetToolBox: Running '+', '.join(toolsUsed)+'.'
 
 	### "return"
 	setattr(proc, jetSequence, jetSeq)
