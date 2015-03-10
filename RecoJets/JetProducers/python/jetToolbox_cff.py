@@ -23,8 +23,8 @@ from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
 
 def jetToolbox( proc, jetType, jetSequence, outputFile, 
 		PUMethod='CHS',                    #### Options: Puppi, CS, SK
-		JETCorrPayload='', JETCorrLevels = [],
-		subJETCorrPayload='', subJETCorrLevels = [],
+		JETCorrPayload='None', JETCorrLevels = [ 'None' ],
+		subJETCorrPayload='None', subJETCorrLevels = [ 'None' ],
 		miniAOD=True,
 		Cut = '', 
 		addPruning=False, zCut=0.1, rCut=0.5, addPrunedSubjets=False,
@@ -67,12 +67,12 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 		if( int(size) > 10 ): 
 			size = '10' 
 			print '|---- For jets bigger than 1.0, the jet corrections are AK10PFchs.'
-		print '|---- jetToolBox: Payload given for Jet corrections ('+JETCorrPayload+') is not correct. Using a default AK'+size+'PFchs instead.'
+		if not 'None' in JETCorrPayload: print '|---- jetToolBox: Payload given for Jet corrections ('+JETCorrPayload+') is not correct. Using a default AK'+size+'PFchs instead.'
 		JETCorrPayload = 'AK'+size+'PFchs'
 	else: print '|---- jetToolBox: Using '+JETCorrPayload+' payload for jet corrections.'
 
-	if not set(JETCorrLevels).issubset(set(JECLevels)):
-		print '|---- jetToolbox: JEC levels given ( '+' '.join(JETCorrLevels)+' ) are incorrect. Using the default levels: L1FastJet, L2Relative, L3Absolute.'
+	if not set(JETCorrLevels).issubset(set(JECLevels)) :
+		if not 'None' in JETCorrLevels: print '|---- jetToolbox: JEC levels given ( '+' '.join(JETCorrLevels)+' ) are incorrect. Using the default levels: L1FastJet, L2Relative, L3Absolute.'
 		JETCorrLevels = ['L1FastJet', 'L2Relative', 'L3Absolute']
 	
 	print '|---- jetToolBox: Applying these jet corrections: ( '+JETCorrPayload+', '+' '.join(JETCorrLevels)+' )'
@@ -80,10 +80,10 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 
 	if addPrunedSubjets or addSoftDropSubjets or addCMSTopTagger:
 		if subJETCorrPayload not in payloadList: 
-			print '|---- jetToolBox: Payload given for subjet corrections ('+JETCorrPayload+') is not correct. Using default AK4PFchs instead.'
+			if not 'None' in subJETCorrPayload: print '|---- jetToolBox: Payload given for subjet corrections ('+JETCorrPayload+') is not correct. Using default AK4PFchs instead.'
 			subJETCorrPayload = 'AK4PFchs'
-		if not set(subJETCorrLevels).issubset(set(JECLevels)):
-			print '|---- jetToolbox: Subjet JEC levels given ( '+' '.join(subJETCorrLevels)+' ) are incorrect. Using the default levels: L1FastJet, L2Relative, L3Absolute.'
+		if not set(subJETCorrLevels).issubset(set(JECLevels)) or not subJETCorrLevels:
+			if not 'None' in subJETCorrLevels: print '|---- jetToolbox: Subjet JEC levels given ( '+' '.join(subJETCorrLevels)+' ) are incorrect. Using the default levels: L1FastJet, L2Relative, L3Absolute.'
 			subJETCorrLevels = ['L1FastJet', 'L2Relative', 'L3Absolute']
 		print '|---- jetToolBox: Applying these subjet corrections: ( '+subJETCorrPayload+', '+' '.join(subJETCorrLevels)+' )'
 		subJEC = ( subJETCorrPayload, subJETCorrLevels , 'None')
