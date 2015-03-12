@@ -66,7 +66,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 	if JETCorrPayload not in payloadList:
 		if( int(size) > 10 ): 
 			size = '10' 
-			print '|---- For jets bigger than 1.0, the jet corrections are AK10PFchs.'
+			print '|---- jetToolbox: For jets bigger than 1.0, the jet corrections are AK10PFchs.'
 		if not 'None' in JETCorrPayload: print '|---- jetToolBox: Payload given for Jet corrections ('+JETCorrPayload+') is not correct. Using a default AK'+size+'PFchs instead.'
 		JETCorrPayload = 'AK'+size+'PFchs'
 	else: print '|---- jetToolBox: Using '+JETCorrPayload+' payload for jet corrections.'
@@ -160,8 +160,8 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 			'pfJetBProbabilityBJetTags',
 			'pfSimpleSecondaryVertexHighEffBJetTags',
 			'pfSimpleSecondaryVertexHighPurBJetTags',
-			'pfCombinedSecondaryVertexBJetTags'
-			#'pfCombinedInclusiveSecondaryVertexV2BJetTags'
+			'pfCombinedSecondaryVertexBJetTags',
+			'pfCombinedInclusiveSecondaryVertexV2BJetTags'
 	    ]
 
 	####  Creating PATjets
@@ -316,8 +316,8 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					getJetMCFlavour = False,
 					explicitJTA = True,  # needed for subjet b tagging
 					svClustering = True, # needed for subjet b tagging
-					fatJets=cms.InputTag(jetALGO+'PF'+PUMethod),             # needed for subjet flavor clustering
-					groomedFatJets=cms.InputTag(jetALGO+'PF'+PUMethod+'SoftDrop'), # needed for subjet flavor clustering
+					fatJets=cms.InputTag(jetalgo+'PFJets'+PUMethod),             # needed for subjet flavor clustering
+					groomedFatJets=cms.InputTag(jetalgo+'PFJets'+PUMethod+'SoftDrop'), # needed for subjet flavor clustering
 					outputModules = ['outputFile']
 					) 
 			getattr( proc,'patJets'+jetALGO+'PF'+PUMethod+'SoftDropSubjets').addAssociatedTracks = cms.bool(False) # needs to be disabled since there is no track collection present in MiniAOD
@@ -405,16 +405,18 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					getJetMCFlavour = False,
 					explicitJTA = True,  # needed for subjet b tagging
 					svClustering = True, # needed for subjet b tagging
-					fatJets=cms.InputTag(jetALGO+'PF'+PUMethod),             # needed for subjet flavor clustering
-					groomedFatJets=cms.InputTag(jetALGO+'PF'+PUMethod+'Pruned'), # needed for subjet flavor clustering
+					fatJets=cms.InputTag(jetalgo+'PFJets'+PUMethod),             # needed for subjet flavor clustering
+					groomedFatJets=cms.InputTag(jetalgo+'PFJets'+PUMethod+'Pruned'), # needed for subjet flavor clustering
 					outputModules = ['outputFile']
 					) 
-			getattr( proc,'patJets'+jetALGO+'PF'+PUMethod+'PrunedSubjets').addAssociatedTracks = cms.bool(False) # needs to be disabled since there is no track collection present in MiniAOD
-			getattr( proc,'patJets'+jetALGO+'PF'+PUMethod+'PrunedSubjets').addJetCharge = cms.bool(False)        # needs to be disabled since there is no track collection present in MiniAOD
-			if hasattr(proc,'pfInclusiveSecondaryVertexFinderTagInfos'+jetALGO+'PF'+PUMethod+'PrunedSubjets'):
-				    getattr(proc,'pfInclusiveSecondaryVertexFinderTagInfos'+jetALGO+'PF'+PUMethod+'PrunedSubjets').extSVCollection = cms.InputTag( svLabel ) #'slimmedSecondaryVertices')
-			getattr(proc,'patJetCorrFactors'+jetALGO+'PF'+PUMethod+'PrunedSubjets' ).primaryVertices = pvLabel  #'offlineSlimmedPrimaryVertices' 
+
 			getattr(proc,'patJetPartonMatch'+jetALGO+'PF'+PUMethod+'PrunedSubjets').matched = cms.InputTag( genParticlesLabel ) #'prunedGenParticles')
+			getattr(proc,'patJetCorrFactors'+jetALGO+'PF'+PUMethod+'PrunedSubjets' ).primaryVertices = pvLabel  #'offlineSlimmedPrimaryVertices' 
+			if hasattr(proc,'pfInclusiveSecondaryVertexFinderTagInfos'+jetALGO+'PF'+PUMethod+'PrunedSubjets'):
+				getattr(proc,'pfInclusiveSecondaryVertexFinderTagInfos'+jetALGO+'PF'+PUMethod+'PrunedSubjets').extSVCollection = cms.InputTag( svLabel ) #'slimmedSecondaryVertices')
+			if miniAOD:
+				getattr( proc,'patJets'+jetALGO+'PF'+PUMethod+'PrunedSubjets').addAssociatedTracks = cms.bool(False) # needs to be disabled since there is no track collection present in MiniAOD
+				getattr( proc,'patJets'+jetALGO+'PF'+PUMethod+'PrunedSubjets').addJetCharge = cms.bool(False)        # needs to be disabled since there is no track collection present in MiniAOD
 			setattr( proc, 'selectedPatJets'+jetALGO+'PF'+PUMethod+'PrunedSubjets', selectedPatJets.clone( src = 'patJets'+jetALGO+'PF'+PUMethod+'PrunedSubjets', cut = Cut ) )
 
 			## Establish references between PATified fat jets and subjets using the BoostedJetMerger

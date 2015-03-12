@@ -2,11 +2,11 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('jetToolbox')
 
-process.load('Configuration.EventContent.EventContent_cff')
-process.load('Configuration.StandardSequences.Geometry_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_cff')
-process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-process.GlobalTag.globaltag = 'PLS170_V7AN1::All'
+process.load("Configuration.StandardSequences.MagneticField_cff")
+process.load("Configuration.Geometry.GeometryIdeal_cff")
+process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag (process.GlobalTag, 'auto:run2_mc')
 
 process.load('FWCore.MessageLogger.MessageLogger_cfi')
 process.MessageLogger.cerr.FwkReport.reportEvery = 10
@@ -15,36 +15,40 @@ process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
 process.options.allowUnscheduled = cms.untracked.bool(True)
 
 from RecoJets.JetProducers.jetToolbox_cff import *
-jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='Puppi' ) 
-jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='CS' ) 
-#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='Puppi' ) 
-#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='CS' ) 
+jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='Puppi', addPruning=True, addSoftDrop=True , addPrunedSubjets=True, addSoftDropSubjets=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True, subJETCorrLevels=['L1FastJet'] ) #, Cut='pt > 100 && abs(eta) < 2.4' ) 
+jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='SK', addPruning=True, addSoftDrop=True , addPrunedSubjets=True, addSoftDropSubjets=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True, JETCorrLevels=['L1FastJet', 'L2Relative'] ) 
+jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='CS', addPruning=True, addSoftDrop=True , addPrunedSubjets=True, addSoftDropSubjets=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True ) 
+jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', addPruning=True, addSoftDrop=True , addPrunedSubjets=True, addSoftDropSubjets=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True, JETCorrPayload='AK3Fchs', subJETCorrPayload='AK8PFchs', JETCorrLevels=['L1FastJet', 'L2Relative'] )
+#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='Puppi', addCMSTopTagger=True, addMassDrop=True, addSoftDrop=True ) 
+#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='SK', addCMSTopTagger=True, addMassDrop=True, addSoftDrop=True ) 
+#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='CS', addCMSTopTagger=True, addMassDrop=True, addSoftDrop=True ) 
+#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', addCMSTopTagger=True, addMassDrop=True, addSoftDrop=True ) 
+#jetToolbox( process, 'ca12', 'ca12JetSubs', 'out', PUMethod='Puppi', addHEPTopTagger=True, addSoftDrop=True )
+#jetToolbox( process, 'ca12', 'ca12JetSubs', 'out', PUMethod='SK', addHEPTopTagger=True, addSoftDrop=True )
+#jetToolbox( process, 'ca12', 'ca12JetSubs', 'out', PUMethod='CS', addHEPTopTagger=True, addSoftDrop=True )
+#jetToolbox( process, 'ca12', 'ca12JetSubs', 'out', addHEPTopTagger=True, addSoftDrop=True )
 
-jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', addSubjets=True, addNsub=True, maxTau=6, addPruning=True, addTrimming=True, addCMSTopTagger=True, addHEPTopTagger=True, addMassDrop=True, addSoftDrop=True ) #, addPrunedSubjets=True )
-jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', addSubjets=True, addNsub=True, maxTau=6, addPruning=True, addTrimming=True, addCMSTopTagger=True, addHEPTopTagger=True, addMassDrop=True, addSoftDrop=True ) #, addPrunedSubjets=True )
-#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', addSubjets=True, addNsub=True, maxTau=6, addPruning=True, addTrimming=True, addCMSTopTagger=True, addHEPTopTagger=True, addMassDrop=True, addSoftDrop=True )
-
-#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', addPrunedSubjets= True, miniAOD=False ) #, addGroomers = False )
-
-
-#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', addSubjets=True, addNsub=True, maxTau=6, addPruning=True, nfilt=5 , zCut=0.2, addTrimming=True, addCMSTopTagger=True, addHEPTopTagger=True, addMassDrop=True, addSoftDrop=True, addPUPPI=True, addCS=True, addSoftKiller=True )
-#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='Puppi', addSubjets=True, addNsub=True, maxTau=6, addPruning=True, nfilt=5 , zCut=0.2, addTrimming=True, addCMSTopTagger=True, addHEPTopTagger=True, addMassDrop=True, addSoftDrop=True, )
-#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='CS', addPruning=True ) #, addSubjets=True, addNsub=True, maxTau=6, addPruning=True, nfilt=5 , zCut=0.2, addTrimming=True, addCMSTopTagger=True, addHEPTopTagger=True, addMassDrop=True, addSoftDrop=True, )
-#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', addSubjets=True, addNsub=True, maxTau=6, addPruning=True, nfilt=5 , zCut=0.2, addTrimming=True, addCMSTopTagger=True, addHEPTopTagger=True, addMassDrop=True, addSoftDrop=True, )
-#jetToolbox( process, 'ca15', 'ca15JetSubs', 'out' )
-#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', addPrunedSubjets= True, miniAOD=False ) #, addGroomers = False )
-#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='Puppi', miniAOD=False, addSubjets=True, addNsub=True, maxTau=6, addPruning=True, nfilt=5 , zCut=0.2 , addTrimming=True, addMassDrop=True, addSoftDrop=True )
-#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', miniAOD=False, PUMethod='CS', addPrunedSubjets=True, addNsub=True, maxTau=6, addPruning=True, nfilt=5 , zCut=0.2, addTrimming=True, addMassDrop=True, addSoftDrop=True )
-#jetToolbox( process, 'ca15', 'ca15JetSubs', 'out', miniAOD=False )
-
+#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out' , addPruning=True, addSoftDrop=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True )
+#
+#
+#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='Puppi', addPruning=True, addSoftDrop=True , addPrunedSubjets=True, addSoftDropSubjets=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True, miniAOD=False ) 
+#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='SK', addPruning=True, addSoftDrop=True , addPrunedSubjets=True, addSoftDropSubjets=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True, miniAOD=False ) 
+#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', PUMethod='CS', addPruning=True, addSoftDrop=True , addPrunedSubjets=True, addSoftDropSubjets=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True, miniAOD=False ) 
+#jetToolbox( process, 'ak8', 'ak8JetSubs', 'out', addPruning=True, addSoftDrop=True , addPrunedSubjets=True, addSoftDropSubjets=True, addNsub=True, maxTau=6, addTrimming=True, addFiltering=True, miniAOD=False )
+#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='Puppi', addCMSTopTagger=True, addMassDrop=True, addSoftDrop=True, miniAOD=False ) 
+#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='SK', addCMSTopTagger=True, addMassDrop=True, addSoftDrop=True, miniAOD=False ) 
+#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', PUMethod='CS', addCMSTopTagger=True, addMassDrop=True, addSoftDrop=True, miniAOD=False ) 
+#jetToolbox( process, 'ca8', 'ca8JetSubs', 'out', addCMSTopTagger=True, addMassDrop=True, addSoftDrop=True, miniAOD=False ) 
+#jetToolbox( process, 'ca12', 'ca12JetSubs', 'out', PUMethod='Puppi', addHEPTopTagger=True, addSoftDrop=True, miniAOD=False )
+#jetToolbox( process, 'ca12', 'ca12JetSubs', 'out', PUMethod='SK', addHEPTopTagger=True, addSoftDrop=True, miniAOD=False )
+#jetToolbox( process, 'ca12', 'ca12JetSubs', 'out', PUMethod='CS', addHEPTopTagger=True, addSoftDrop=True, miniAOD=False )
+#jetToolbox( process, 'ca12', 'ca12JetSubs', 'out', addHEPTopTagger=True, addSoftDrop=True, miniAOD=False )
 
 process.endpath = cms.EndPath(process.out)
 
-#process.load('RPVSt100tojj_13TeV_pythia8_MiniAOD_v706_PU40bx50_cfi')
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 process.source = cms.Source("PoolSource",
-#		fileNames = cms.untracked.vstring('/store/user/jstupak/ZH_HToBB_ZToLL_M-125_13TeV_powheg-herwigpp/Spring14dr-PU_S14_POSTLS170_V6AN1-v1/140622_185946/0000/miniAOD-prod_PAT_1.root')
 #		fileNames = cms.untracked.vstring('/store/user/algomez/RPVSt100tojj_13TeV_pythia8_GENSIM/RPVSt100tojj_13TeV_pythia8_AODSIM_v706_PU40bx50/fffa6e37f9457f57c180027c6057d31f/RPVSt100tojj_13TeV_pythia8_AODSIM_PU40bx50_516_1_zGg.root')
-		fileNames = cms.untracked.vstring('/store/user/algomez/RPVSt100tojj_13TeV_pythia8_GENSIM/RPVSt100tojj_13TeV_pythia8_MiniAOD_v706_PU40bx25/b71e879835d2f0083a0e044b05216236/RPVSt100tojj_13TeV_pythia8_MiniAOD_PU40bx25_525_1_JVY.root')
+		fileNames = cms.untracked.vstring('/store/user/algomez/RPVSt100tojj_13TeV_pythia8_GENSIM/RPVSt100tojj_13TeV_pythia8_MiniAOD_v706_PU40bx50/b71e879835d2f0083a0e044b05216236/RPVSt100tojj_13TeV_pythia8_MiniAOD_PU40bx50_10_1_0cO.root')
 		)
 
