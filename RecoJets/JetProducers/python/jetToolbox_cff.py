@@ -305,15 +305,19 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					proc,
 					labelName = jetALGO+'PF'+PUMethod+'SoftDropSubjets',
 					jetSource = cms.InputTag( jetalgo+'PFJets'+PUMethod+'SoftDrop', 'SubJets'),
+					algo = jetalgo,  # needed for subjet b tagging
+					rParam = jetSize,  # needed for subjet b tagging
 					jetCorrections = subJEC, #( 'AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
 					pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
 					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
 					btagDiscriminators = bTagDiscriminators,
 					genJetCollection = cms.InputTag( jetalgo+'GenJetsNoNuSoftDrop','SubJets'),
-					explicitJTA = True,
 					getJetMCFlavour = False,
-					svClustering = True,
+					explicitJTA = True,  # needed for subjet b tagging
+					svClustering = True, # needed for subjet b tagging
+					fatJets=cms.InputTag(jetALGO+'PF'+PUMethod),             # needed for subjet flavor clustering
+					groomedFatJets=cms.InputTag(jetALGO+'PF'+PUMethod+'SoftDrop'), # needed for subjet flavor clustering
 					outputModules = ['outputFile']
 					) 
 			getattr( proc,'patJets'+jetALGO+'PF'+PUMethod+'SoftDropSubjets').addAssociatedTracks = cms.bool(False) # needs to be disabled since there is no track collection present in MiniAOD
@@ -390,15 +394,19 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					proc,
 					labelName = jetALGO+'PF'+PUMethod+'PrunedSubjets',
 					jetSource = cms.InputTag( jetalgo+'PFJets'+PUMethod+'Pruned', 'SubJets'),
+					algo = jetalgo,  # needed for subjet b tagging
+					rParam = jetSize,  # needed for subjet b tagging
 					jetCorrections = subJEC,
 					pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
 					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
 					btagDiscriminators = bTagDiscriminators,
 					genJetCollection = cms.InputTag( jetalgo+'GenJetsNoNuPruned','SubJets'),
-					explicitJTA = True,
 					getJetMCFlavour = False,
-					svClustering = True,
+					explicitJTA = True,  # needed for subjet b tagging
+					svClustering = True, # needed for subjet b tagging
+					fatJets=cms.InputTag(jetALGO+'PF'+PUMethod),             # needed for subjet flavor clustering
+					groomedFatJets=cms.InputTag(jetALGO+'PF'+PUMethod+'Pruned'), # needed for subjet flavor clustering
 					outputModules = ['outputFile']
 					) 
 			getattr( proc,'patJets'+jetALGO+'PF'+PUMethod+'PrunedSubjets').addAssociatedTracks = cms.bool(False) # needs to be disabled since there is no track collection present in MiniAOD
