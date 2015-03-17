@@ -313,7 +313,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
 					btagDiscriminators = bTagDiscriminators,
 					genJetCollection = cms.InputTag( jetalgo+'GenJetsNoNuSoftDrop','SubJets'),
-					getJetMCFlavour = False,
+					#getJetMCFlavour = False,
 					explicitJTA = True,  # needed for subjet b tagging
 					svClustering = True, # needed for subjet b tagging
 					fatJets=cms.InputTag(jetalgo+'PFJets'+PUMethod),             # needed for subjet flavor clustering
@@ -402,7 +402,7 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
 					btagDiscriminators = bTagDiscriminators,
 					genJetCollection = cms.InputTag( jetalgo+'GenJetsNoNuPruned','SubJets'),
-					getJetMCFlavour = False,
+					#getJetMCFlavour = False,
 					explicitJTA = True,  # needed for subjet b tagging
 					svClustering = True, # needed for subjet b tagging
 					fatJets=cms.InputTag(jetalgo+'PFJets'+PUMethod),             # needed for subjet flavor clustering
@@ -541,15 +541,19 @@ def jetToolbox( proc, jetType, jetSequence, outputFile,
 					proc,
 					labelName = 'CMSTopTag'+PUMethod+'Subjets',
 					jetSource = cms.InputTag('cmsTopTagPFJets'+PUMethod, 'SubJets'),
+					algo = jetalgo,  # needed for subjet b tagging
+					rParam = jetSize,  # needed for subjet b tagging
+					jetCorrections = subJEC,
 					pfCandidates = cms.InputTag( pfCand ),  #'packedPFCandidates'),
 					pvSource = cms.InputTag( pvLabel), #'offlineSlimmedPrimaryVertices'),
 					svSource = cms.InputTag( svLabel ),   #'slimmedSecondaryVertices'),
-					btagDiscriminators = ['pfCombinedSecondaryVertexBJetTags'],
-					jetCorrections = subJEC,
+					btagDiscriminators = bTagDiscriminators,
+					genJetCollection = cms.InputTag( jetalgo+'GenJetsNoNu'),
+					#getJetMCFlavour = False,
 					explicitJTA = True,  # needed for subjet b tagging
 					svClustering = True, # needed for subjet b tagging
-					getJetMCFlavour = False,
-					genJetCollection =  cms.InputTag('ak8GenJetsNoNu')
+					fatJets=cms.InputTag(jetalgo+'PFJets'+PUMethod),             # needed for subjet flavor clustering
+					groomedFatJets=cms.InputTag('CMSTopTag'+PUMethod), # needed for subjet flavor clustering
 					)
 
 			getattr(proc,'patJetPartonMatchCMSTopTag'+PUMethod+'Subjets').matched = cms.InputTag( genParticlesLabel ) #'prunedGenParticles')
